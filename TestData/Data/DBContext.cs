@@ -31,7 +31,8 @@ namespace TestData.Data
         {
             modelBuilder.Entity<Game>()
                 .Property(e => e.Price)
-                .HasAnnotation("Range", new RangeAttribute(1.0, 3000.0));
+                .IsRequired()
+                .HasAnnotation("Range", new RangeAttribute(1.0, 3000.0).ToString());
 
             modelBuilder.Entity<User>()
                 .HasIndex(e => e.UserName)

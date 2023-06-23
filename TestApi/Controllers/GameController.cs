@@ -5,6 +5,7 @@ using TestData.Repositories.GameRepository;
 namespace TestApi.Controllers
 {
     [ApiController]
+    [Route("[controller]/[action]")]
     public class GameController : ControllerBase
     {
         private readonly IGameRepository _repo;

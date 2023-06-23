@@ -11,6 +11,13 @@ namespace TestData.Repositories.GameRepository
 {
     public class GameRepository : IGameRepository
     {
+        private readonly DBContext dbContext;
+
+        public GameRepository(DBContext dbContext)
+        {
+            this.dbContext = dbContext;
+        }
+
         public async Task<Game> AddDbObjectAsync(Game entity)
         {
             using (DBContext context = new DBContext())
@@ -46,6 +53,10 @@ namespace TestData.Repositories.GameRepository
                                 currUser.Games = new List<Game>();
                             }
                         }
+                    }
+                    else
+                    {
+                        throw new Exception("User does not exists!");
                     }
 
                     game = new Game
@@ -107,11 +118,9 @@ namespace TestData.Repositories.GameRepository
 
         public IQueryable<Game> GetAllDbObjectsByFilterAsync(Game entity)
         {
+            IQueryable<Game> filteredGames;
 
-            using (DBContext context = new DBContext())
-            {
-                IQueryable<Game> filteredGames = context.Games.AsQueryable();
-
+                filteredGames = dbContext.Games.AsQueryable();
                 try
                 {
                     if (!string.IsNullOrEmpty(entity.Title))
@@ -143,8 +152,9 @@ namespace TestData.Repositories.GameRepository
                 {
                     throw new Exception("Error occured while filtering object");
                 }
-                return filteredGames;
-            }
+            
+
+            return filteredGames;
         }
 
         public async Task<Game> GetDbObjectByIdAsync(Guid id)

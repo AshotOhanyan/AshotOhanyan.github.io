@@ -1,4 +1,6 @@
 using Microsoft.EntityFrameworkCore;
+using TestData.Repositories.GameRepository;
+using TestData.Repositories.UserRepository;
 using TestServices.DbService;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -16,7 +18,8 @@ var dbContextFactory = new DBContextFactory();
 var dbContext = dbContextFactory.CreateDbContext(null);
 
 builder.Services.AddSingleton(dbContext);
-
+builder.Services.AddTransient<IGameRepository, GameRepository>();
+builder.Services.AddTransient<IUserRepository, UserRepository>();
 
 var app = builder.Build();
 
