@@ -9,7 +9,7 @@ namespace TestData.Repositories
     public interface IBaseRepository<T>
     {
         Task<IEnumerable<T>> GetAllDbObjectsAsync();
-        Task<IQueryable<T>> GetAllDbObjectsByFilterAsync(T entity);
+        IQueryable<T> GetAllDbObjectsByFilterAsync(T entity);
         Task<T> GetDbObjectByIdAsync(Guid id);
         Task<T> UpdateDbObjectAsync(Guid id,T entity);
         Task<T> AddDbObjectAsync(T entity);

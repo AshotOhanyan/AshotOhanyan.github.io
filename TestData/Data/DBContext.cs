@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -29,9 +30,12 @@ namespace TestData.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<Game>()
-                .HasIndex(e => e.Title)
+                .Property(e => e.Price)
+                .HasAnnotation("Range", new RangeAttribute(1.0, 3000.0));
+
+            modelBuilder.Entity<User>()
+                .HasIndex(e => e.UserName)
                 .IsUnique();
-               
         }
     }
 }
