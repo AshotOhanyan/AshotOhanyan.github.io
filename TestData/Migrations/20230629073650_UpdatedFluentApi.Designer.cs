@@ -12,8 +12,8 @@ using TestData.Data;
 namespace TestData.Migrations
 {
     [DbContext(typeof(DBContext))]
-    [Migration("20230617121443_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20230629073650_UpdatedFluentApi")]
+    partial class UpdatedFluentApi
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -32,21 +32,20 @@ namespace TestData.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Description")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("ImageUrl")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<decimal>("Price")
-                        .HasColumnType("decimal(18,2)");
+                    b.Property<decimal?>("Price")
+                        .IsRequired()
+                        .HasColumnType("decimal(18,2)")
+                        .HasAnnotation("Range", "System.ComponentModel.DataAnnotations.RangeAttribute");
 
-                    b.Property<float>("Rate")
+                    b.Property<float?>("Rate")
                         .HasColumnType("real");
 
                     b.Property<string>("Title")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<Guid?>("UserId")
@@ -54,7 +53,9 @@ namespace TestData.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("UserId")
+                        .IsUnique()
+                        .HasFilter("[UserId] IS NOT NULL");
 
                     b.ToTable("Games");
                 });
@@ -66,10 +67,13 @@ namespace TestData.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("UserName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(450)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("UserName")
+                        .IsUnique()
+                        .HasFilter("[UserName] IS NOT NULL");
 
                     b.ToTable("Users");
                 });
@@ -78,7 +82,8 @@ namespace TestData.Migrations
                 {
                     b.HasOne("TestData.DbModels.User", "User")
                         .WithMany("Games")
-                        .HasForeignKey("UserId");
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.Navigation("User");
                 });

@@ -9,5 +9,6 @@ namespace TestData.Repositories.UserRepository
 {
     public interface IUserRepository : IBaseRepository<User>
     {
+       
     }
 }

@@ -30,17 +30,23 @@ namespace TestApi.Controllers
         }
 
         [HttpPost]
+        public async Task<Game> GetGameByIdAsync(Guid id)
+        {
+            return await _repo.GetDbObjectByIdAsync(id);
+        }
+
+        [HttpPost]
         public async Task<Game> AddGameAsync(Game game)
         {
-            await _repo.AddDbObjectAsync(game);
-            return game;
+            return await _repo.AddDbObjectAsync(game);
+            
         }
 
         [HttpPut]
         public async Task<Game> UpdateGameAsync(Guid id,Game game)
         {
-            await _repo.UpdateDbObjectAsync(id, game);
-            return game;
+            return await _repo.UpdateDbObjectAsync(id, game);
+             
         }
 
         [HttpDelete]

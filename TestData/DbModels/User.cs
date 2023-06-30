@@ -10,8 +10,6 @@ namespace TestData.DbModels
     public class User
     {
         public Guid Id { get; set; }
-
-        [Required]
         public string? UserName { get; set; }
         
         public virtual List<Game>? Games { get; set; }

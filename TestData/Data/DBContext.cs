@@ -21,10 +21,19 @@ namespace TestData.Data
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
+            string connectionString = Environment.GetEnvironmentVariable("MY_DATABASE_CONNECTIONSTRING", EnvironmentVariableTarget.Machine);
+
             if (!optionsBuilder.IsConfigured)
             {
-                optionsBuilder.UseSqlServer(Environment.GetEnvironmentVariable("MY_DATABASE_CONNECTIONSTRING", EnvironmentVariableTarget.Machine));
+                optionsBuilder.UseSqlServer(connectionString);
             }
+
+            optionsBuilder.UseSqlServer(connectionString, builder =>
+            {
+                builder.EnableRetryOnFailure(5, TimeSpan.FromSeconds(10), null);
+            });
+
+            base.OnConfiguring(optionsBuilder);
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -37,6 +46,12 @@ namespace TestData.Data
             modelBuilder.Entity<User>()
                 .HasIndex(e => e.UserName)
                 .IsUnique();
+
+            modelBuilder.Entity<User>()
+            .HasMany(u => u.Games)
+            .WithOne(g => g.User)
+            .HasForeignKey(g => g.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

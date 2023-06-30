@@ -12,8 +12,8 @@ using TestData.Data;
 namespace TestData.Migrations
 {
     [DbContext(typeof(DBContext))]
-    [Migration("20230623162400_Migration2")]
-    partial class Migration2
+    [Migration("20230629075822_Game_UserIdNotUnique")]
+    partial class Game_UserIdNotUnique
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -46,7 +46,6 @@ namespace TestData.Migrations
                         .HasColumnType("real");
 
                     b.Property<string>("Title")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<Guid?>("UserId")
@@ -66,13 +65,13 @@ namespace TestData.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("UserName")
-                        .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
                     b.HasKey("Id");
 
                     b.HasIndex("UserName")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("[UserName] IS NOT NULL");
 
                     b.ToTable("Users");
                 });
@@ -81,7 +80,8 @@ namespace TestData.Migrations
                 {
                     b.HasOne("TestData.DbModels.User", "User")
                         .WithMany("Games")
-                        .HasForeignKey("UserId");
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.Navigation("User");
                 });

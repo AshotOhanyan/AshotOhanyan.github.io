@@ -9,6 +9,6 @@ namespace TestData.Repositories.GameRepository
 {
     public interface IGameRepository : IBaseRepository<Game>
     {
-        
+       
     }
 }
