@@ -17,6 +17,7 @@ namespace TestServices.DbService
             var optionsBuilder = new DbContextOptionsBuilder<DBContext>();
             var connectionString = Environment.GetEnvironmentVariable("MY_DATABASE_CONNECTIONSTRING", EnvironmentVariableTarget.Machine);
 
+
             optionsBuilder.UseSqlServer(connectionString);
 
             return new DBContext(optionsBuilder.Options);

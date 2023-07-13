@@ -9,6 +9,6 @@ namespace TestData.Repositories.UserRepository
 {
     public interface IUserRepository : IBaseRepository<User>
     {
-       
+        Task ChangePassword(Guid userId,string password);
     }
 }

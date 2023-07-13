@@ -1,6 +1,10 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using System.Text;
 using TestData.DbModels;
 using TestData.Repositories.UserRepository;
+using TestServices.Models;
+using TestServices.Models.User;
+using TestServices.Services.UserService;
 
 namespace TestApi.Controllers
 {
@@ -8,51 +12,70 @@ namespace TestApi.Controllers
     [Route("[controller]/[action]")]
     public class UserController : ControllerBase
     {
-        private readonly IUserRepository _repo;
+        private readonly IUserService _service;
 
-        public UserController(IUserRepository repo)
+        public UserController(IUserService service)
         {
-            _repo = repo;
+            _service = service;
         }
+
+
+        #region CRUD
 
         [HttpGet]
-        public async Task<List<User>> GetAllUsersAsync()
+        public async Task<List<UserResponseModel>> GetAllUsersAsync()
         {
-            IEnumerable<User> Users = await _repo.GetAllDbObjectsAsync();
-            return Users.ToList();
+            IEnumerable<UserResponseModel> users = await _service.GetAllDbObjectsAsync();
+            return users.ToList();
         }
 
         [HttpPost]
-        public List<User> GetUsersByFilterAsync(User User)
+        public List<UserResponseModel> GetUsersByFilterAsync(UserRequestModel model)
         {
-            IQueryable<User> Users = _repo.GetAllDbObjectsByFilterAsync(User);
-            return Users.ToList();
+            IEnumerable<UserResponseModel> users = _service.GetAllDbObjectsByFilterAsync(model);
+            return users.ToList();
         }
 
         [HttpPost]
-        public async Task<User> GetUserByIdAsync(Guid id)
+        public async Task<UserResponseModel> GetUserByIdAsync(Guid id)
         {
-            return await _repo.GetDbObjectByIdAsync(id);
+            return await _service.GetDbObjectByIdAsync(id);
         }
 
         [HttpPost]
-        public async Task<User> AddUserAsync(User User)
+        public async Task<UserResponseModel> AddUserAsync(UserRequestModel model)
         {
-            return await _repo.AddDbObjectAsync(User);
+            return await _service.AddDbObjectAsync(model);
 
         }
 
         [HttpPut]
-        public async Task<User> UpdateUserAsync(Guid id, User User)
+        public async Task<UserResponseModel> UpdateUserAsync(Guid id, UserRequestModel model)
         {
-            return await _repo.UpdateDbObjectAsync(id, User);
+            return await _service.UpdateDbObjectAsync(id, model);
 
         }
 
         [HttpDelete]
         public async Task RemoveUser(Guid id)
         {
-            await _repo.DeleteDbObjectAsync(id);
+            await _service.DeleteDbObjectAsync(id);
+        }
+
+        #endregion
+
+
+        [HttpPost]
+        public async Task<UserSignUpResponseModel> SignUpAsync(UserSignUpModel model)
+        {
+
+            
+        }
+
+        [HttpPost]
+        public string GetToken(string token)
+        {
+            return token.Trim();
         }
     }
 }

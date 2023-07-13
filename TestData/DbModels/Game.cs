@@ -13,10 +13,18 @@ namespace TestData.DbModels
     public class Game
     {
         public Guid Id { get; set; }
+
+        [Required]
+        [MaxLength(20)]
         public string? Title { get; set; }
+        [Required]
         public decimal? Price { get; set; }
+        [MaxLength(300)]
         public string? Description { get; set; }
+       
         public float? Rate { get; set; }
+
+        [MaxLength(100)]
         public string? ImageUrl { get; set; }
 
         public Guid? UserId { get; set; }

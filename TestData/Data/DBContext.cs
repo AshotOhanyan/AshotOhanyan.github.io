@@ -1,7 +1,9 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -11,9 +13,14 @@ namespace TestData.Data
 {
     public class DBContext : DbContext
     {
-        public DBContext() { }
+
+        public DBContext() 
+        {
+
+        }
         public DBContext(DbContextOptions options) : base(options)
         {
+
         }
 
         public DbSet<User> Users { get; set; }
@@ -21,7 +28,7 @@ namespace TestData.Data
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            string connectionString = Environment.GetEnvironmentVariable("MY_DATABASE_CONNECTIONSTRING", EnvironmentVariableTarget.Machine);
+            string? connectionString = Environment.GetEnvironmentVariable("MY_DATABASE_CONNECTIONSTRING", EnvironmentVariableTarget.Machine);
 
             if (!optionsBuilder.IsConfigured)
             {
@@ -33,6 +40,10 @@ namespace TestData.Data
                 builder.EnableRetryOnFailure(5, TimeSpan.FromSeconds(10), null);
             });
 
+#if DEBUG
+            optionsBuilder.LogTo(message => System.Diagnostics.Debug.WriteLine(message));
+#endif
+
             base.OnConfiguring(optionsBuilder);
         }
 
@@ -42,6 +53,14 @@ namespace TestData.Data
                 .Property(e => e.Price)
                 .IsRequired()
                 .HasAnnotation("Range", new RangeAttribute(1.0, 3000.0).ToString());
+
+            modelBuilder.Entity<Game>()
+                .Property(e => e.Rate)
+                .HasAnnotation("Range", new RangeAttribute(0.0, 5.0).ToString());
+
+            modelBuilder.Entity<User>()
+                .Property(e => e.Balance)
+                .HasAnnotation("Range", new RangeAttribute(0, 50000).ToString());
 
             modelBuilder.Entity<User>()
                 .HasIndex(e => e.UserName)

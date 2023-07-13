@@ -2,6 +2,8 @@ using Microsoft.EntityFrameworkCore;
 using TestData.Repositories.GameRepository;
 using TestData.Repositories.UserRepository;
 using TestServices.DbService;
+using TestServices.Services.GameService;
+using TestServices.Services.UserService;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,8 +22,17 @@ var dbContextFactory = new DBContextFactory();
 var dbContext = dbContextFactory.CreateDbContext(null);
 
 builder.Services.AddSingleton(dbContext);
+
 builder.Services.AddTransient<IGameRepository, GameRepository>();
+builder.Services.AddTransient<IGameService, GameService>();
+
+
 builder.Services.AddTransient<IUserRepository, UserRepository>();
+builder.Services.AddTransient<IUserService, UserService>();
+
+builder.Services.AddAuthentication("Bearer").AddJwtBearer();
+
+builder.Services.AddMemoryCache();
 
 var app = builder.Build();
 
@@ -32,8 +43,14 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+
+
+
 app.UseHttpsRedirection();
 
+app.UseExceptionHandler("/error");
+
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();

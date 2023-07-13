@@ -6,13 +6,13 @@ using System.Threading.Tasks;
 
 namespace TestServices.Services
 {
-    public interface IBaseService<T>
+    public interface IBaseService<T,Y>
     {
-        Task<IEnumerable<T>> GetAllDbObjectsAsync();
-        IEnumerable<T> GetAllDbObjectsByFilterAsync(T model);
-        Task<T> GetDbObjectByIdAsync(Guid id);
-        Task<T> UpdateDbObjectAsync(Guid id, T model);
-        Task<T> AddDbObjectAsync(T model);
+        Task<IEnumerable<Y>> GetAllDbObjectsAsync();
+        IEnumerable<Y> GetAllDbObjectsByFilterAsync(T model);
+        Task<Y> GetDbObjectByIdAsync(Guid id);
+        Task<Y> UpdateDbObjectAsync(Guid id, T model);
+        Task<Y> AddDbObjectAsync(T model);
         Task DeleteDbObjectAsync(Guid id);
     }
 }

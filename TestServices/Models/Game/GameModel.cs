@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace TestServices.Models
+namespace TestServices.Models.Game
 {
     public class GameModel
     {

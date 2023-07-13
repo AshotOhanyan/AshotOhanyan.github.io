@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using TestData.DbModels;
-using TestData.Repositories.GameRepository;
+using TestServices.Models;
+using TestServices.Models.Game;
+using TestServices.Services.GameService;
 
 namespace TestApi.Controllers
 {
@@ -8,51 +9,51 @@ namespace TestApi.Controllers
     [Route("[controller]/[action]")]
     public class GameController : ControllerBase
     {
-        private readonly IGameRepository _repo;
+        private readonly IGameService _service;
 
-        public GameController(IGameRepository repo)
+        public GameController(IGameService service)
         {
-            _repo = repo;
+            _service = service;
         }
 
         [HttpGet]
-        public async Task<List<Game>> GetAllGamesAsync()
+        public async Task<List<GameModel>> GetAllGamesAsync()
         {
-            IEnumerable<Game> games = await _repo.GetAllDbObjectsAsync();
+            IEnumerable<GameModel> games = await _service.GetAllDbObjectsAsync();
             return games.ToList();
         }
 
         [HttpPost]
-        public List<Game> GetGamesByFilterAsync(Game game)
+        public List<GameModel> GetGamesByFilterAsync(GameModel model)
         {
-            IQueryable<Game> games = _repo.GetAllDbObjectsByFilterAsync(game);
+            IEnumerable<GameModel> games = _service.GetAllDbObjectsByFilterAsync(model);
             return games.ToList();
         }
 
         [HttpPost]
-        public async Task<Game> GetGameByIdAsync(Guid id)
+        public async Task<GameModel> GetGameByIdAsync(Guid id)
         {
-            return await _repo.GetDbObjectByIdAsync(id);
+            return await _service.GetDbObjectByIdAsync(id);
         }
 
         [HttpPost]
-        public async Task<Game> AddGameAsync(Game game)
+        public async Task<GameModel> AddGameAsync(GameModel model)
         {
-            return await _repo.AddDbObjectAsync(game);
+            return await _service.AddDbObjectAsync(model);
             
         }
 
         [HttpPut]
-        public async Task<Game> UpdateGameAsync(Guid id,Game game)
+        public async Task<GameModel> UpdateGameAsync(Guid id, GameModel model)
         {
-            return await _repo.UpdateDbObjectAsync(id, game);
+            return await _service.UpdateDbObjectAsync(id, model);
              
         }
 
         [HttpDelete]
         public async Task RemoveGame(Guid id)
         {
-            await _repo.DeleteDbObjectAsync(id);
+            await _service.DeleteDbObjectAsync(id);
         }
     }
 }

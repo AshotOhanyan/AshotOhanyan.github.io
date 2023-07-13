@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using TestData.DbModels;
 using TestData.Repositories.GameRepository;
 using TestServices.Mapping;
-using TestServices.Models;
+using TestServices.Models.Game;
 
 namespace TestServices.Services.GameService
 {
@@ -51,7 +51,7 @@ namespace TestServices.Services.GameService
 
             foreach(Game game in filteredGames)
             {
-                result.Add(game.MapToGameModel());
+                result.Add(game.MapToGameModel()); 
             }
 
             return result;

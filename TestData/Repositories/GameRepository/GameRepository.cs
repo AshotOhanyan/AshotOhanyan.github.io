@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -6,36 +7,32 @@ using System.Text;
 using System.Threading.Tasks;
 using TestData.Data;
 using TestData.DbModels;
+using TestData.Exceptions;
 
 namespace TestData.Repositories.GameRepository
 {
     public class GameRepository : IGameRepository
     {
         private readonly DBContext dbContext;
+        private readonly IMemoryCache cache;
 
-        public GameRepository(DBContext dbContext)
+        public GameRepository(DBContext dbContext, IMemoryCache cache)
         {
             this.dbContext = dbContext;
+            this.cache = cache;
         }
 
         public async Task<Game> AddDbObjectAsync(Game entity)
         {
             using (DBContext context = new DBContext())
             {
-                Game game = await context.Games.FirstOrDefaultAsync(x => x.Id == entity.Id);
-
-                if (game != null)
-                    throw new Exception("Game already exists!");
-
-                User currUser = new User();
-
                 try
                 {
-                    game = new Game
+                    Game game = new Game
                     {
                         Id = Guid.NewGuid(),
-                        Title = string.IsNullOrEmpty(entity.Title) ? throw new Exception("Game most has a title!") : entity.Title,
-                        Price = entity.Price ?? throw new Exception("Game most has a price!"),
+                        Title = string.IsNullOrEmpty(entity.Title) ? throw new ArgumentNullException(entity.Title, "Game most has a title!") : entity.Title,
+                        Price = entity.Price ?? throw new ArgumentNullException(entity.Price.ToString(), "Game most has a price!"),
                         Description = entity.Description,
                         Rate = entity.Rate,
                         ImageUrl = entity.ImageUrl,
@@ -44,28 +41,29 @@ namespace TestData.Repositories.GameRepository
 
                     if (entity.UserId != null && entity.UserId != Guid.Empty)
                     {
-                        currUser = await context.Users.FirstOrDefaultAsync(x => x.Id == entity.UserId) ?? throw new Exception("User does not exist!");
-                        if (currUser != null)
-                        {
-                            if (currUser.Games == null)
-                            {
-                                currUser.Games = new List<Game>();
-                            }
+                        User currUser = await context.Users.FirstOrDefaultAsync(x => x.Id == entity.UserId) ?? throw new ArgumentNullException(game.UserId.ToString(), "User does not exist!");
 
-                            currUser.Games.Add(game);
-                            game.UserId = currUser.Id;
+                        if (currUser.Games == null)
+                        {
+                            currUser.Games = new List<Game>();
                         }
+
+                        currUser.Games.Add(game);
+                        game.UserId = currUser.Id;
+
                     }
+
+                    cache.Set(game.Id, game, new MemoryCacheEntryOptions().SetAbsoluteExpiration(TimeSpan.FromMinutes(15)));
 
                     await context.AddAsync(game);
                     await context.SaveChangesAsync();
+
+                    return game;
                 }
                 catch
                 {
-                    throw new Exception("Error while adding game to database!");
+                    throw new OperationFailedException(entity, "Error while adding game to database!");
                 }
-
-                return game;
             }
         }
 
@@ -73,16 +71,21 @@ namespace TestData.Repositories.GameRepository
         {
             using (DBContext context = new DBContext())
             {
-                Game game = await context.Games.FirstOrDefaultAsync(x => x.Id == id) ?? throw new Exception("Game already exists!");
+                cache.TryGetValue(id, out Game? game);
+                if (game == null)
+                {
+                    game = await context.Games.FirstOrDefaultAsync(x => x.Id == id) ?? throw new OperationFailedException("Game already exists!");
+                }
 
                 try
                 {
+                    cache.Remove(game.Id);
                     context.Remove(game);
                     await context.SaveChangesAsync();
                 }
                 catch
                 {
-                    throw new Exception("Error while removing game from database!");
+                    throw new OperationFailedException(game, "Error while removing game from database!");
                 }
             }
         }
@@ -129,7 +132,7 @@ namespace TestData.Repositories.GameRepository
             }
             catch
             {
-                throw new Exception("Error occured while filtering object");
+                throw new OperationFailedException(entity, "Error occured while filtering object");
             }
 
 
@@ -140,7 +143,14 @@ namespace TestData.Repositories.GameRepository
         {
             using (DBContext context = new DBContext())
             {
-                return await context.Games.Include(x => x.User).FirstOrDefaultAsync(x => x.Id == id) ?? throw new Exception("Game does not exists!");
+                cache.TryGetValue(id, out Game dbObject);
+                if (dbObject != null) return dbObject;
+
+                Game result = await context.Games.Include(x => x.User).FirstOrDefaultAsync(x => x.Id == id) ?? throw new OperationFailedException("Game does not exists!");
+                cache.Set(id, result, new MemoryCacheEntryOptions().SetAbsoluteExpiration(TimeSpan.FromMinutes(5)));
+
+                return result;
+
             }
         }
 
@@ -148,54 +158,68 @@ namespace TestData.Repositories.GameRepository
         {
             using (DBContext context = new DBContext())
             {
-                Game game = await context.Games.FirstOrDefaultAsync(x => x.Id == id);
+
+                cache.TryGetValue(id, out Game? game);
+
+                if (game == null)
+                {
+                    game = await context.Games.Include(x => x.User).FirstOrDefaultAsync(x => x.Id == id);
+                }
 
                 if (game == null)
                 {
                     return await AddDbObjectAsync(entity);
                 }
 
-                if (game.Title != null)
+                try
                 {
-                    game.Title = entity.Title;
-                }
-
-                if (entity.Price != null)
-                {
-                    game.Price = entity.Price;
-                }
-
-                if (entity.Description != null)
-                {
-                    game.Description = entity.Description;
-                }
-
-                if (entity.Rate != null)
-                {
-                    game.Rate = entity.Rate;
-                }
-
-                if (entity.UserId != null)
-                {
-                    User user = await context.Users.Include(u => u.Games).FirstOrDefaultAsync(x => x.Id == entity.UserId) ?? throw new Exception("User with this id does not exists!");
-
-                    game.UserId = user.Id;
-
-                    if (user.Games == null)
+                    if (entity.Title != null)
                     {
-                        user.Games = new List<Game>();
+                        game.Title = entity.Title;
                     }
 
-                    Game currGame = user.Games.FirstOrDefault(x => x.Id == game.Id);
-
-                    if (currGame == null)
+                    if (entity.Price != null)
                     {
-                        user.Games.Add(game);
+                        game.Price = entity.Price;
                     }
-                }
 
-                await context.SaveChangesAsync();
-                return game;
+                    if (entity.Description != null)
+                    {
+                        game.Description = entity.Description;
+                    }
+
+                    if (entity.Rate != null)
+                    {
+                        game.Rate = entity.Rate;
+                    }
+
+                    if (entity.UserId != null)
+                    {
+                        User user = await context.Users.Include(u => u.Games).FirstOrDefaultAsync(x => x.Id == entity.UserId) ?? throw new OperationFailedException("User with this id does not exists!");
+
+                        game.UserId = user.Id;
+
+                        if (user.Games == null)
+                        {
+                            user.Games = new List<Game>();
+                        }
+
+                        Game? currGame = user.Games.FirstOrDefault(x => x.Id == game.Id);
+
+                        if (currGame == null)
+                        {
+                            user.Games.Add(game);
+                        }
+                    }
+
+                    await context.SaveChangesAsync();
+                    cache.CreateEntry(entity);
+                    return game;
+                }
+                catch
+                {
+                    throw new OperationFailedException(entity, "Error while updating game info!");
+                }
             }
         }
     }
