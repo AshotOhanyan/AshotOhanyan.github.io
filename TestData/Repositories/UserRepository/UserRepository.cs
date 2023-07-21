@@ -37,6 +37,10 @@ namespace TestData.Repositories.UserRepository
                         Email = string.IsNullOrEmpty(entity.Email) ? throw new ArgumentNullException(entity.Email, "Email can not be empty!") : entity.Email,
                         Password = string.IsNullOrEmpty(entity.Password) ? throw new ArgumentNullException(entity.Password, "Password can not be empty!") : BCrypt.Net.BCrypt.HashPassword(entity.Password.Trim(),UserInfo.Salt),
                         Balance = entity.Balance ?? 0,
+                        IsEmailConfirmed = entity.IsEmailConfirmed ?? false,
+                        ConfirmationToken = entity.ConfirmationToken,
+                        TokenExpirationDate = entity.TokenExpirationDate,
+                        RefreshToken = entity.RefreshToken,
                         Status = UserStatus.Active,
                         Games = new List<Game>()
                     };
@@ -142,9 +146,29 @@ namespace TestData.Repositories.UserRepository
                 {
                     filteredUsers = filteredUsers.Where(x => x.Balance == entity.Balance);
                 }
+                if (!string.IsNullOrEmpty(entity.Password))
+                {
+                    filteredUsers = filteredUsers.Where(x => x.Password == entity.Password);
+                }
                 if (!string.IsNullOrEmpty(entity.Status))
                 {
                     filteredUsers = filteredUsers.Where(x => x.Status == entity.Status);
+                }
+                if(!string.IsNullOrEmpty(entity.ConfirmationToken))
+                {
+                    filteredUsers = filteredUsers.Where(x => x.ConfirmationToken == entity.ConfirmationToken);
+                }
+                if(entity.TokenExpirationDate != null)
+                {
+                    filteredUsers = filteredUsers.Where(x => x.TokenExpirationDate == entity.TokenExpirationDate);
+                }
+                if(entity.IsEmailConfirmed != null) 
+                {
+                    filteredUsers = filteredUsers.Where(x => x.IsEmailConfirmed == entity.IsEmailConfirmed);
+                }
+                if (entity.RefreshToken != null)
+                {
+                    filteredUsers = filteredUsers.Where(x => x.RefreshToken == entity.RefreshToken);
                 }
             }
             catch
@@ -167,6 +191,11 @@ namespace TestData.Repositories.UserRepository
                 cache.Set(id, result, new MemoryCacheEntryOptions().SetAbsoluteExpiration(TimeSpan.FromMinutes(5)));
                 return result;
             }
+        }
+
+        public async Task SaveChangesAsync()
+        {
+            await dbContext.SaveChangesAsync();
         }
 
         public async Task<User> UpdateDbObjectAsync(Guid id, User entity)
@@ -200,6 +229,26 @@ namespace TestData.Repositories.UserRepository
                     {
                         user.Status = entity.Status;
                     }
+                    if (entity.Password != null)
+                    {
+                        user.Password = entity.Password;
+                    }
+                    if (entity.ConfirmationToken != null)
+                    {
+                        user.ConfirmationToken = entity.ConfirmationToken;
+                    }
+                    if (entity.TokenExpirationDate != null)
+                    {
+                        user.TokenExpirationDate = entity.TokenExpirationDate;
+                    }
+                    if (entity.IsEmailConfirmed != null)
+                    {
+                        user.IsEmailConfirmed = entity.IsEmailConfirmed;
+                    }
+                    if (entity.RefreshToken != null)
+                    {
+                        user.RefreshToken = entity.RefreshToken;
+                    }
                     if (entity.Games != null && entity.Games.Any())
                     {
                         foreach (Game game in entity.Games)
@@ -222,7 +271,7 @@ namespace TestData.Repositories.UserRepository
 
 
                     await context.SaveChangesAsync();
-                    cache.CreateEntry(entity);
+                    cache.CreateEntry(user);
 
                     return user;
                 }

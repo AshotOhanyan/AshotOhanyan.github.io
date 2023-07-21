@@ -14,5 +14,6 @@ namespace TestData.Repositories
         Task<T> UpdateDbObjectAsync(Guid id,T entity);
         Task<T> AddDbObjectAsync(T entity);
         Task DeleteDbObjectAsync(Guid id);
+        Task SaveChangesAsync();
     }
 }

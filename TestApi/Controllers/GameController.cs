@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using TestServices.Models;
 using TestServices.Models.Game;
 using TestServices.Services.GameService;
@@ -7,6 +8,7 @@ namespace TestApi.Controllers
 {
     [ApiController]
     [Route("[controller]/[action]")]
+    [Authorize]
     public class GameController : ControllerBase
     {
         private readonly IGameService _service;
@@ -31,6 +33,7 @@ namespace TestApi.Controllers
         }
 
         [HttpPost]
+        [Route("{id}")]
         public async Task<GameModel> GetGameByIdAsync(Guid id)
         {
             return await _service.GetDbObjectByIdAsync(id);
@@ -44,6 +47,7 @@ namespace TestApi.Controllers
         }
 
         [HttpPut]
+        [Route("{id}")]
         public async Task<GameModel> UpdateGameAsync(Guid id, GameModel model)
         {
             return await _service.UpdateDbObjectAsync(id, model);
@@ -51,6 +55,7 @@ namespace TestApi.Controllers
         }
 
         [HttpDelete]
+        [Route("{id}")]
         public async Task RemoveGame(Guid id)
         {
             await _service.DeleteDbObjectAsync(id);

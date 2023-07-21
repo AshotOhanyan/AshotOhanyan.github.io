@@ -14,15 +14,20 @@ namespace TestServices.OtherServices
         public static void SendEmail(string recipient,string subject,string body)
         {
             MailMessage message = new MailMessage();
-            message.From = new MailAddress(recipient);
+            message.From = new MailAddress(CompanyInfo.CompanyEmail);
+            message.To.Add(recipient);
             message.Subject = subject;  
             message.Body = body;
             message.IsBodyHtml = false;
 
-            SmtpClient smtpClient = new SmtpClient("smtp.gmail.com", 587);
-            smtpClient.UseDefaultCredentials = true;
-            smtpClient.Credentials = new NetworkCredential(CompanyInfo.CompanyEmail,CompanyInfo.CompanyPassword);
+            SmtpClient smtpClient = new SmtpClient();
+            smtpClient.UseDefaultCredentials = false;
+            smtpClient.Credentials = new NetworkCredential(CompanyInfo.CompanyEmail, CompanyInfo.CompanyPassword);
             smtpClient.EnableSsl = true;
+            smtpClient.Host = "smtp.gmail.com";
+            smtpClient.Port = 587;
+            
+
 
             smtpClient.Send(message);
         }

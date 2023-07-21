@@ -37,6 +37,7 @@ namespace TestApi.Controllers
         }
 
         [HttpPost]
+        [Route("{id}")]
         public async Task<UserResponseModel> GetUserByIdAsync(Guid id)
         {
             return await _service.GetDbObjectByIdAsync(id);
@@ -50,6 +51,7 @@ namespace TestApi.Controllers
         }
 
         [HttpPut]
+        [Route("{id}")]
         public async Task<UserResponseModel> UpdateUserAsync(Guid id, UserRequestModel model)
         {
             return await _service.UpdateDbObjectAsync(id, model);
@@ -57,6 +59,7 @@ namespace TestApi.Controllers
         }
 
         [HttpDelete]
+        [Route("{id}")]
         public async Task RemoveUser(Guid id)
         {
             await _service.DeleteDbObjectAsync(id);
@@ -66,16 +69,23 @@ namespace TestApi.Controllers
 
 
         [HttpPost]
-        public async Task<UserSignUpResponseModel> SignUpAsync(UserSignUpModel model)
+        public async Task<UserSignUpResponseModel> SignUp(UserSignUpModel model)
         {
+            return await _service.SignUpAsync(model);
+        }
 
-            
+
+        [HttpPost]
+        [Route("{userId}/{token}")]
+        public async Task ConfirmEmailToken(Guid userId,string token)
+        {
+            await _service.ConfirmEmailToken(userId, token);
         }
 
         [HttpPost]
-        public string GetToken(string token)
-        {
-            return token.Trim();
+        public async Task<string> SignIn(UserSignInRequestModel model) 
+        { 
+            return await _service.SignInAsync(model);
         }
     }
 }

@@ -14,7 +14,7 @@ namespace TestData.Data
     public class DBContext : DbContext
     {
 
-        public DBContext() 
+        public DBContext()
         {
 
         }
@@ -64,6 +64,20 @@ namespace TestData.Data
 
             modelBuilder.Entity<User>()
                 .HasIndex(e => e.UserName)
+                .IsUnique();
+
+            modelBuilder.Entity<User>()
+                .HasIndex(e => e.Email)
+                .IsUnique();
+
+            modelBuilder.Entity<User>()
+                .Property(e => e.IsEmailConfirmed)
+                .IsRequired()
+                .HasDefaultValue(false)
+                .ValueGeneratedNever();
+
+            modelBuilder.Entity<User>()
+                .HasIndex(e => e.ConfirmationToken)
                 .IsUnique();
 
             modelBuilder.Entity<User>()

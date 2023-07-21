@@ -28,6 +28,15 @@ namespace TestData.DbModels
         [Required]
         public string? Status { get; set; }
 
+        public string? ConfirmationToken { get; set; }
+
+        public DateTime? TokenExpirationDate { get; set; }
+
+        [Required]
+        public bool? IsEmailConfirmed { get; set; }
+
+        public string? RefreshToken { get; set; }
+
         public virtual List<Game>? Games { get; set; }
     }
 }

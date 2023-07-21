@@ -154,6 +154,11 @@ namespace TestData.Repositories.GameRepository
             }
         }
 
+        public async Task SaveChangesAsync()
+        {
+            await dbContext.SaveChangesAsync();
+        }
+
         public async Task<Game> UpdateDbObjectAsync(Guid id, Game entity)
         {
             using (DBContext context = new DBContext())

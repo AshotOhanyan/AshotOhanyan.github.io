@@ -70,6 +70,10 @@ namespace TestServices.Mapping
             user.Balance = model.Balance;
             user.Email = model.Email;
             user.Password = model.Password;
+            user.IsEmailConfirmed = model.IsEmailConfirmed;
+            user.ConfirmationToken = model.ConfirmationToken;
+            user.TokenExpirationDate = model.TokenExpirationDate;
+            user.RefreshToken = model.RefreshToken;
             user.Games = games;
 
             return user;
@@ -89,10 +93,13 @@ namespace TestServices.Mapping
                 }
             }
 
+            model.Id = user.Id;
             model.UserName = user.UserName;
             model.Status = user.Status;
+            model.IsEmailConfirmed = user.IsEmailConfirmed;
             model.Balance = user.Balance;
             model.Email = user.Email;
+            model.RefreshToken = user.RefreshToken;
             model.Games = gameModels;
 
 

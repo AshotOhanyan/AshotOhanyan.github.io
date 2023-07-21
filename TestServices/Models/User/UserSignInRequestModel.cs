@@ -6,8 +6,9 @@ using System.Threading.Tasks;
 
 namespace TestServices.Models.User
 {
-    public class UserSignUpResponseModel
+    public class UserSignInRequestModel
     {
-        public Guid Id { get; set; }
+        public string? UserNameOrEmail { get; set; }
+        public string? Password { get; set; }
     }
 }

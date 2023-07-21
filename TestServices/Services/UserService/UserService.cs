@@ -1,11 +1,17 @@
-﻿using Microsoft.AspNetCore.Authentication;
+﻿using Azure.Core;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using System;
 using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Net.Http;
+using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
+using TestData.DbConstants.UserConstants;
 using TestData.DbModels;
 using TestData.Repositories.UserRepository;
 using TestServices.Exceptions;
@@ -25,6 +31,7 @@ namespace TestServices.Services.UserService
             _repo = repo;
         }
 
+        #region CRUD
         public async Task<UserResponseModel> AddDbObjectAsync(UserRequestModel model)
         {
             User user = await _repo.AddDbObjectAsync(model.MapUserRequestModelToUser());
@@ -77,6 +84,9 @@ namespace TestServices.Services.UserService
             return User.MapUserToUserResponseModel();
         }
 
+        #endregion
+
+
         public async Task<UserSignUpResponseModel> SignUpAsync(UserSignUpModel model)
         {
 
@@ -85,44 +95,172 @@ namespace TestServices.Services.UserService
                 throw new SignUpFailedException("Password or ConfirmPassword fields are incorrect!");
             }
 
-            UserRequestModel user = new UserRequestModel
+
+            var emailValidationToken = TokenGenerator.GenerateEightCharacterToken();
+
+            User user = new User()
             {
-                UserName = model.UserName,
-                Password = model.Password,  
-                Email = model.Email,
+                UserName = model.UserName ?? throw new SignUpFailedException("UserName not valid!"),
+                Email = model.Email ?? throw new SignUpFailedException("Email not valid!"),
+                Password = model.Password ?? throw new SignUpFailedException("Password not valid!"),
+                ConfirmationToken = emailValidationToken ?? throw new SignUpFailedException("ConfirmationToken not valid!"),
             };
-
-            Random r = new Random();
-            var x = r.Next(0, 1000000);
-            string emailValidationToken = x.ToString("000000");
-
-
 
             try
             {
+                EmailConfirmation.SendEmail(user.Email, "Email Validation Code", emailValidationToken);
 
-                EmailConfirmation.SendEmail(CompanyInfo.CompanyEmail, "Email Validation Code", emailValidationToken);
+                user.TokenExpirationDate = DateTime.UtcNow.AddDays(4);
 
-                Task task = new Task(() => {  })
+                user = await _repo.AddDbObjectAsync(user);
 
-                _repo.AddDbObjectAsync(user.MapUserRequestModelToUser());
+                return new UserSignUpResponseModel() { Id = user.Id };
             }
             catch
             {
-                throw new Exception("Email not valid!");
+                throw new SignUpFailedException("Email not valid!");
+            }
+        }
+
+
+        public async Task ConfirmEmailToken(Guid userId, string token)
+        {
+            token = token.Trim();
+
+            if (string.IsNullOrEmpty(token))
+            {
+                throw new SignUpFailedException("Email not valid!");
+            }
+
+            User? user = await _repo.GetAllDbObjectsByFilterAsync(new User { ConfirmationToken = token }).FirstOrDefaultAsync();
+
+            if (user == null)
+            {
+                await _repo.DeleteDbObjectAsync(userId);
+
+                throw new SignUpFailedException("Wrong Token!");
+            }
+
+            TimeSpan time = DateTime.UtcNow.Subtract(user.TokenExpirationDate.Value);
+
+            if (time >= TimeSpan.Zero)
+            {
+                user.ConfirmationToken = null;
+                user.IsEmailConfirmed = false;
+
+                await _repo.SaveChangesAsync();
+
+                throw new SignUpFailedException("Token has expired!");
             }
 
 
-            return new UserSignUpResponseModel { EmailConfirmationToken = emailValidationToken };
+            await _repo.UpdateDbObjectAsync(user.Id, new User { IsEmailConfirmed = true });
         }
 
-
-        public async string GetEmailToken()
+        public async Task<string> SignInAsync(UserSignInRequestModel model)
         {
-            HttpClient httpClient = new HttpClient();
-            HttpResponseMessage response = await httpClient.PostAsync("url_of_other_action", null);
+            string accessToken;
+
+            if (string.IsNullOrEmpty(model.Password) || string.IsNullOrEmpty(model.UserNameOrEmail))
+            {
+                throw new SignInFailedException("Username,Email and Password can not be empty!");
+            }
+            User? user = new User();
+
+            if (model.UserNameOrEmail.Contains("@"))
+            {
+                string email = model.UserNameOrEmail;
+
+                user = await _repo.GetAllDbObjectsByFilterAsync(new User { Email = email }).FirstOrDefaultAsync();
+            }
+            else
+            {
+                string userName = model.UserNameOrEmail;
+
+                user = await _repo.GetAllDbObjectsByFilterAsync(new User { UserName = userName }).FirstOrDefaultAsync();
+            }
+
+            if (user == null)
+            {
+                throw new SignInFailedException("User with this email does not exists!");
+            }
+
+            string passwordHash = BCrypt.Net.BCrypt.HashPassword(model.Password!.Trim(), UserInfo.Salt);
+
+            if (passwordHash != user.Password!.Trim())
+            {
+                throw new SignInFailedException("Wrong Password!");
+            }
+
+
+            try {
+
+                if(string.IsNullOrEmpty(user.UserName) || string.IsNullOrEmpty(user.Email))
+                {
+                    throw new SignInFailedException("Username and Email can not be empty!");
+                }
+
+                accessToken = GenerateAccessToken(user.Id.ToString(), user.UserName, user.Email);
+                string refreshToken = GenerateRefreshToken();
+
+                await _repo.UpdateDbObjectAsync(user.Id, new User { RefreshToken = refreshToken });
+                
+            }
+            catch
+            {
+                throw new SignInFailedException("Error while creating jwt token!");
+            }
+
+
+            return accessToken;
         }
 
+        public string GenerateAccessToken(string id,string name,string email)
+        {
+            Random r = new Random();
 
+            List<Claim> claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.NameIdentifier,id),
+                new Claim(ClaimTypes.Name,name),
+                new Claim(ClaimTypes.Email,email),
+                new Claim("tokenId",r.Next().ToString())
+            };
+
+            JwtSecurityToken jwt = new JwtSecurityToken(
+                issuer: AuthOptions.ISSUER,
+                audience: AuthOptions.AUDIENCE,
+                claims: claims,
+                expires: DateTime.UtcNow.Add(TimeSpan.FromMinutes(15)),
+                signingCredentials: new SigningCredentials(AuthOptions.GetSymmetricSecurityKey(), SecurityAlgorithms.HmacSha256)
+            );
+
+            return new JwtSecurityTokenHandler().WriteToken(jwt);
+        }
+        
+
+        public string GenerateRefreshToken()
+        {
+            Random r = new Random();
+            var secretKey = AuthOptions.GetSymmetricSecurityKey();
+
+            List<Claim> claims = new List<Claim>
+            {
+                new Claim("IsRefreshToken","true"),
+                new Claim("tokenId",r.Next().ToString())
+            };
+
+            JwtSecurityToken jwt = new JwtSecurityToken(
+                issuer: AuthOptions.ISSUER,
+                audience: AuthOptions.AUDIENCE,
+                claims: claims,
+                expires: DateTime.UtcNow.Add(TimeSpan.FromDays(7)),
+                signingCredentials: new SigningCredentials(secretKey, SecurityAlgorithms.HmacSha256)
+            );
+
+            var refreshToken = new JwtSecurityTokenHandler().WriteToken(jwt);
+
+            return refreshToken;
+        }
     }
 }

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TestData.Data;
 
@@ -11,9 +12,11 @@ using TestData.Data;
 namespace TestData.Migrations
 {
     [DbContext(typeof(DBContext))]
-    partial class DBContextModelSnapshot : ModelSnapshot
+    [Migration("20230714130719_ChangedUser1")]
+    partial class ChangedUser1
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -76,18 +79,13 @@ namespace TestData.Migrations
 
                     b.Property<string>("Email")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<bool?>("IsEmailConfirmed")
-                        .IsRequired()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(false);
+                        .HasColumnType("bit");
 
                     b.Property<string>("Password")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("RefreshToken")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Status")
@@ -107,9 +105,6 @@ namespace TestData.Migrations
                     b.HasIndex("ConfirmationToken")
                         .IsUnique()
                         .HasFilter("[ConfirmationToken] IS NOT NULL");
-
-                    b.HasIndex("Email")
-                        .IsUnique();
 
                     b.HasIndex("UserName")
                         .IsUnique();
