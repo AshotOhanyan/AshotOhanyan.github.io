@@ -35,16 +35,35 @@ namespace TestData.Repositories.UserRepository
                         Id = Guid.NewGuid(),
                         UserName = string.IsNullOrEmpty(entity.UserName) ? throw new ArgumentNullException(entity.UserName, "UserName can not be empty!") : entity.UserName,
                         Email = string.IsNullOrEmpty(entity.Email) ? throw new ArgumentNullException(entity.Email, "Email can not be empty!") : entity.Email,
-                        Password = string.IsNullOrEmpty(entity.Password) ? throw new ArgumentNullException(entity.Password, "Password can not be empty!") : BCrypt.Net.BCrypt.HashPassword(entity.Password.Trim(),UserInfo.Salt),
+                        Password = string.IsNullOrEmpty(entity.Password) ? throw new ArgumentNullException(entity.Password, "Password can not be empty!") : BCrypt.Net.BCrypt.HashPassword(entity.Password.Trim(), UserInfo.Salt),
                         Balance = entity.Balance ?? 0,
                         IsEmailConfirmed = entity.IsEmailConfirmed ?? false,
                         ConfirmationToken = entity.ConfirmationToken,
                         TokenExpirationDate = entity.TokenExpirationDate,
                         RefreshToken = entity.RefreshToken,
                         Status = UserStatus.Active,
+                        RoleId = entity.RoleId,
                         Games = new List<Game>()
                     };
 
+                    if (entity.RoleId != null && entity.RoleId != Guid.Empty)
+                    {
+                        Role? currRole = await context.Roles.FirstOrDefaultAsync(x => x.Id == entity.RoleId);
+
+
+                        if (currRole == null)
+                        {
+                            throw new ArgumentNullException(entity.RoleId.ToString(), "Role with this id does not exists!");
+                        }
+
+                        if (currRole.Users == null)
+                        {
+                            currRole.Users = new List<User>();
+                        }
+
+                        user.RoleId = currRole.Id;
+                        currRole.Users.Add(user);
+                    }
 
                     if (entity.Games != null && entity.Games.Any())
                     {
@@ -77,28 +96,6 @@ namespace TestData.Repositories.UserRepository
             }
         }
 
-        public async Task ChangePassword(Guid userId, string password)
-        {
-            using (DBContext context = new DBContext())
-            {
-                try
-                {
-                    User? currUser = await context.Users.FirstOrDefaultAsync(x => x.Id == userId) ?? throw new ArgumentNullException(userId.ToString(), "User with this id does not exist!");
-                    if (string.IsNullOrEmpty(password))
-                    {
-                        throw new ArgumentNullException(password, "Password can not be empty!");
-                    }
-                    currUser.Password = BCrypt.Net.BCrypt.HashPassword(password.Trim(), UserInfo.Salt);
-
-                    await context.SaveChangesAsync();
-                }
-                catch
-                {
-                    throw new OperationFailedException("Error while changing the password!");
-                }
-            }
-        }
-
         public async Task DeleteDbObjectAsync(Guid id)
         {
             using (DBContext context = new DBContext())
@@ -127,7 +124,7 @@ namespace TestData.Repositories.UserRepository
         {
             using (DBContext context = new DBContext())
             {
-                return await context.Users.Include(g => g.Games).ToListAsync();
+                return await context.Users.Include(g => g.Games).Include(r => r.Role).ToListAsync();
             }
         }
 
@@ -135,7 +132,7 @@ namespace TestData.Repositories.UserRepository
         {
             IQueryable<User> filteredUsers;
 
-            filteredUsers = dbContext.Users.Include(g => g.Games).AsQueryable();
+            filteredUsers = dbContext.Users.Include(g => g.Games).Include(r => r.Role).AsQueryable();
             try
             {
                 if (!string.IsNullOrEmpty(entity.UserName))
@@ -154,21 +151,25 @@ namespace TestData.Repositories.UserRepository
                 {
                     filteredUsers = filteredUsers.Where(x => x.Status == entity.Status);
                 }
-                if(!string.IsNullOrEmpty(entity.ConfirmationToken))
+                if (!string.IsNullOrEmpty(entity.ConfirmationToken))
                 {
                     filteredUsers = filteredUsers.Where(x => x.ConfirmationToken == entity.ConfirmationToken);
                 }
-                if(entity.TokenExpirationDate != null)
+                if (entity.TokenExpirationDate != null)
                 {
                     filteredUsers = filteredUsers.Where(x => x.TokenExpirationDate == entity.TokenExpirationDate);
                 }
-                if(entity.IsEmailConfirmed != null) 
+                if (entity.IsEmailConfirmed != null)
                 {
                     filteredUsers = filteredUsers.Where(x => x.IsEmailConfirmed == entity.IsEmailConfirmed);
                 }
                 if (entity.RefreshToken != null)
                 {
                     filteredUsers = filteredUsers.Where(x => x.RefreshToken == entity.RefreshToken);
+                }
+                if (entity.RoleId != null && entity.RoleId != Guid.Empty)
+                {
+                    filteredUsers = filteredUsers.Where(x => x.RoleId == entity.RoleId);
                 }
             }
             catch
@@ -187,7 +188,7 @@ namespace TestData.Repositories.UserRepository
                 cache.TryGetValue(id, out User? dbObject);
                 if (dbObject != null) return dbObject;
 
-                User result = await context.Users.Include(x => x.Games).FirstOrDefaultAsync(x => x.Id == id) ?? throw new OperationFailedException("User does not exists!");
+                User result = await context.Users.Include(x => x.Games).Include(x => x.Role).FirstOrDefaultAsync(x => x.Id == id) ?? throw new OperationFailedException("User does not exists!");
                 cache.Set(id, result, new MemoryCacheEntryOptions().SetAbsoluteExpiration(TimeSpan.FromMinutes(5)));
                 return result;
             }
@@ -206,7 +207,7 @@ namespace TestData.Repositories.UserRepository
 
                 if (user == null)
                 {
-                    user = await context.Users.Include(x => x.Games).FirstOrDefaultAsync(x => x.Id == id);
+                    user = await context.Users.Include(x => x.Games).Include(x => x.Role).FirstOrDefaultAsync(x => x.Id == id);
                 }
 
                 if (user == null)
@@ -243,7 +244,14 @@ namespace TestData.Repositories.UserRepository
                     }
                     if (entity.IsEmailConfirmed != null)
                     {
-                        user.IsEmailConfirmed = entity.IsEmailConfirmed;
+                        if (entity.IsEmailConfirmed == true)
+                        {
+                            user.IsEmailConfirmed = true;
+                        }
+                        else
+                        {
+                            user.IsEmailConfirmed = false;
+                        }
                     }
                     if (entity.RefreshToken != null)
                     {

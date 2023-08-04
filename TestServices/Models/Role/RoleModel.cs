@@ -3,11 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using TestData.DbModels;
+using TestServices.Models.User;
 
-namespace TestData.Repositories.UserRepository
+namespace TestServices.Models.Role
 {
-    public interface IUserRepository : IBaseRepository<User>
+    public class RoleModel
     {
+        public string? Name { get; set; }
     }
 }

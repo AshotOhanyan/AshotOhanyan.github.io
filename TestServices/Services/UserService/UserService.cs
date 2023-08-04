@@ -1,5 +1,6 @@
 ﻿using Azure.Core;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -13,6 +14,7 @@ using System.Text;
 using System.Threading.Tasks;
 using TestData.DbConstants.UserConstants;
 using TestData.DbModels;
+using TestData.Exceptions;
 using TestData.Repositories.UserRepository;
 using TestServices.Exceptions;
 using TestServices.Mapping;
@@ -104,13 +106,16 @@ namespace TestServices.Services.UserService
                 Email = model.Email ?? throw new SignUpFailedException("Email not valid!"),
                 Password = model.Password ?? throw new SignUpFailedException("Password not valid!"),
                 ConfirmationToken = emailValidationToken ?? throw new SignUpFailedException("ConfirmationToken not valid!"),
+                RoleId = RoleConstants.Default
             };
 
             try
             {
-                EmailConfirmation.SendEmail(user.Email, "Email Validation Code", emailValidationToken);
+                Task sendEmail = Task.Factory.StartNew(() => EmailConfirmation.SendEmail(user.Email, "Email Validation Code", emailValidationToken));
 
                 user.TokenExpirationDate = DateTime.UtcNow.AddDays(4);
+
+                sendEmail.Wait();
 
                 user = await _repo.AddDbObjectAsync(user);
 
@@ -200,7 +205,9 @@ namespace TestServices.Services.UserService
                     throw new SignInFailedException("Username and Email can not be empty!");
                 }
 
-                accessToken = GenerateAccessToken(user.Id.ToString(), user.UserName, user.Email);
+                string role = string.IsNullOrEmpty(user.Role!.Name) ? throw new SignInFailedException("Role can not be null or empty!") : user.Role.Name;
+
+                accessToken = GenerateAccessToken(user.Id.ToString(), user.UserName, user.Email,role);
                 string refreshToken = GenerateRefreshToken();
 
                 await _repo.UpdateDbObjectAsync(user.Id, new User { RefreshToken = refreshToken });
@@ -215,7 +222,7 @@ namespace TestServices.Services.UserService
             return accessToken;
         }
 
-        public string GenerateAccessToken(string id,string name,string email)
+        public string GenerateAccessToken(string id,string name,string email,string role)
         {
             Random r = new Random();
 
@@ -224,7 +231,8 @@ namespace TestServices.Services.UserService
                 new Claim(ClaimTypes.NameIdentifier,id),
                 new Claim(ClaimTypes.Name,name),
                 new Claim(ClaimTypes.Email,email),
-                new Claim("tokenId",r.Next().ToString())
+                new Claim("tokenId",r.Next().ToString()),
+                new Claim(ClaimsIdentity.DefaultRoleClaimType,role)
             };
 
             JwtSecurityToken jwt = new JwtSecurityToken(
@@ -261,6 +269,27 @@ namespace TestServices.Services.UserService
             var refreshToken = new JwtSecurityTokenHandler().WriteToken(jwt);
 
             return refreshToken;
+        }
+
+        public async Task ResetPassword(Guid userId, string password, string confirmPassword)
+        {
+            User user = await _repo.GetDbObjectByIdAsync(userId);
+           
+            
+            if (user == null)
+                throw new ArgumentNullException(userId.ToString(), "User with this Id does not exists!");
+
+            if(password.Trim() != confirmPassword.Trim())
+                throw new OperationFailedException("Password and Confirm Password must be same!");
+
+            string passwordHash = BCrypt.Net.BCrypt.HashPassword(password!.Trim(), UserInfo.Salt);
+
+           if(user.Password == passwordHash)
+            {
+                throw new OperationFailedException("New password can not be same as previus one!");
+            }
+
+          await _repo.UpdateDbObjectAsync(userId, new User { Password = passwordHash});
         }
     }
 }

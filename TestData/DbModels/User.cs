@@ -37,6 +37,9 @@ namespace TestData.DbModels
 
         public string? RefreshToken { get; set; }
 
+        public Guid? RoleId { get; set; }
+        public Role? Role { get; set; }
+
         public virtual List<Game>? Games { get; set; }
     }
 }

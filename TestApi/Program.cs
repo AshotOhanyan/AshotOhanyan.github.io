@@ -3,10 +3,12 @@ using Microsoft.AspNetCore.Authentication.OAuth;
 using Microsoft.EntityFrameworkCore;
 using TestApi.Middlewares;
 using TestData.Repositories.GameRepository;
+using TestData.Repositories.RoleRepository;
 using TestData.Repositories.UserRepository;
 using TestServices.DbService;
 using TestServices.ServiceConstants;
 using TestServices.Services.GameService;
+using TestServices.Services.RoleService;
 using TestServices.Services.UserService;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -41,6 +43,9 @@ builder.Services.AddTransient<IGameService, GameService>();
 
 builder.Services.AddTransient<IUserRepository, UserRepository>();
 builder.Services.AddTransient<IUserService, UserService>();
+
+builder.Services.AddTransient<IRoleRepository, RoleRepository>();
+builder.Services.AddTransient<IRoleService, RoleService>();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>

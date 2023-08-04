@@ -8,7 +8,7 @@ namespace TestApi.Controllers
 {
     [ApiController]
     [Route("[controller]/[action]")]
-    [Authorize]
+    [Authorize(Roles = "default")]
     public class GameController : ControllerBase
     {
         private readonly IGameService _service;

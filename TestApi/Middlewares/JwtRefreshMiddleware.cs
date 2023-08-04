@@ -3,8 +3,10 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Net;
 using System.Security.Claims;
 using TestData.DbModels;
+using TestServices.Models.Role;
 using TestServices.Models.User;
 using TestServices.OtherServices;
+using TestServices.Services.RoleService;
 using TestServices.Services.UserService;
 
 namespace TestApi.Middlewares
@@ -13,11 +15,13 @@ namespace TestApi.Middlewares
     {
         private readonly RequestDelegate _next;
         private readonly IUserService _userService;
+        private readonly IRoleService _roleService;
 
-        public JwtRefreshMiddleware(RequestDelegate next, IUserService userService)
+        public JwtRefreshMiddleware(RequestDelegate next, IUserService userService,IRoleService roleService)
         {
             _next = next;
             _userService = userService;
+            _roleService = roleService;
         }
 
         public async Task InvokeAsync(HttpContext context)
@@ -42,6 +46,8 @@ namespace TestApi.Middlewares
                 {
                     UserResponseModel? model = _userService.GetAllDbObjectsByFilterAsync(new UserRequestModel { UserName = context.User.Identity!.Name }).FirstOrDefault();
 
+                    RoleModel role = await _roleService.GetRoleByIdAsync(model!.RoleId!.Value); 
+
                     string? refreshToken = model!.RefreshToken;
 
                     bool isRefreshTokenExpired = TokenGenerator.IsTokenExpired(refreshToken!);
@@ -53,7 +59,7 @@ namespace TestApi.Middlewares
                         await _next(context);
                     }
 
-                    string token = _userService.GenerateAccessToken(model.Id.ToString()!, model.UserName!, model.Email!);
+                    string token = _userService.GenerateAccessToken(model.Id.ToString()!, model.UserName!, model.Email!,role.Name!);
 
                     context.Response.StatusCode = (int)HttpStatusCode.OK;
                     await context.Response.WriteAsync(token);

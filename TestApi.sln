@@ -5,9 +5,9 @@ VisualStudioVersion = 17.6.33801.468
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestApi", "TestApi\TestApi.csproj", "{FF70D64C-9915-40E1-B454-C9F6AD69B709}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestData", "TestData\TestData.csproj", "{FB508024-909F-4BEC-8543-A94BCCDCB19B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestData", "TestData\TestData.csproj", "{FB508024-909F-4BEC-8543-A94BCCDCB19B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestServices", "TestServices\TestServices.csproj", "{D5A125E4-BAA6-4C73-9F17-60D498D40E04}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestServices", "TestServices\TestServices.csproj", "{D5A125E4-BAA6-4C73-9F17-60D498D40E04}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

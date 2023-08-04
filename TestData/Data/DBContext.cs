@@ -25,6 +25,7 @@ namespace TestData.Data
 
         public DbSet<User> Users { get; set; }
         public DbSet<Game> Games { get; set; }
+        public DbSet<Role> Roles { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -64,6 +65,10 @@ namespace TestData.Data
 
             modelBuilder.Entity<User>()
                 .HasIndex(e => e.UserName)
+                .IsUnique();
+
+            modelBuilder.Entity<Role>()
+                .HasIndex(e => e.Name)
                 .IsUnique();
 
             modelBuilder.Entity<User>()

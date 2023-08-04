@@ -8,6 +8,7 @@ using TestData.Repositories.GameRepository;
 using TestData.Repositories.UserRepository;
 using TestServices.DbService;
 using TestServices.Models.Game;
+using TestServices.Models.Role;
 using TestServices.Models.User;
 
 namespace TestServices.Mapping
@@ -65,6 +66,8 @@ namespace TestServices.Mapping
                 }
             }
 
+
+
             user.UserName = model.UserName;
             user.Status = model.Status;
             user.Balance = model.Balance;
@@ -73,7 +76,9 @@ namespace TestServices.Mapping
             user.IsEmailConfirmed = model.IsEmailConfirmed;
             user.ConfirmationToken = model.ConfirmationToken;
             user.TokenExpirationDate = model.TokenExpirationDate;
+            user.RoleId = model.RoleId;
             user.RefreshToken = model.RefreshToken;
+
             user.Games = games;
 
             return user;
@@ -100,10 +105,33 @@ namespace TestServices.Mapping
             model.Balance = user.Balance;
             model.Email = user.Email;
             model.RefreshToken = user.RefreshToken;
+            model.RoleId = user.RoleId;
             model.Games = gameModels;
 
 
             return model;
+        }
+
+        #endregion
+
+        #region RoleMappings
+
+        public static RoleModel MapRoleToRoleModel(this Role role)
+        {
+            RoleModel model = new RoleModel();
+
+            model.Name = role.Name;
+
+            return model;
+        }
+
+        public static Role MapRoleModelToRole(this RoleModel model)
+        {
+            Role role = new Role();
+
+            role.Name = model.Name;
+
+            return role;
         }
 
         #endregion

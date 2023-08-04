@@ -54,7 +54,7 @@ namespace TestServices.OtherServices
             }catch (SecurityTokenExpiredException ex)
             {
                 return true;
-            }catch(System.ArgumentException ex)
+            }catch(ArgumentException e)
             {
                 return false;
             }

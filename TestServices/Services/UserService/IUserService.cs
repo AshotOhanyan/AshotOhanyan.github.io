@@ -11,8 +11,10 @@ namespace TestServices.Services.UserService
     {
         public Task<UserSignUpResponseModel> SignUpAsync(UserSignUpModel model);
         public Task<string> SignInAsync(UserSignInRequestModel model);
-        public string GenerateAccessToken(string id, string name, string email);
+        public string GenerateAccessToken(string id, string name, string email,string role);
         public string GenerateRefreshToken();
         public Task ConfirmEmailToken(Guid userId, string token);
+        public Task ResetPassword(Guid userId,string password,string confirmPassword);
+
     }
 }

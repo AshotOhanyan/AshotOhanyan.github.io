@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 using System.Text;
 using TestData.DbModels;
 using TestData.Repositories.UserRepository;
@@ -86,6 +88,15 @@ namespace TestApi.Controllers
         public async Task<string> SignIn(UserSignInRequestModel model) 
         { 
             return await _service.SignInAsync(model);
+        }
+
+        [Authorize]
+        [HttpPost]
+        public async Task ResetPassword(string password,string confirmPassword)
+        {
+            string userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            await _service.ResetPassword(Guid.Parse(userId!), password, confirmPassword);
         }
     }
 }
